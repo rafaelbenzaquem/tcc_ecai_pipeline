@@ -21,7 +21,7 @@ Redes elétricas de alta tensão estão sujeitas a distúrbios transitórios (af
 Sinais brutos (.mat)
     └─► Pré-processamento        → tensores normalizados (p.u.)
         └─► Autoencoder CAE      → vetores latentes de 16 dimensões
-            └─► K-Means          → 4 agrupamentos + detecção de anomalias
+            └─► K-Means          → 8 agrupamentos + detecção de anomalias
                 └─► Curadoria Semântica → rótulos IEEE 1159:2019
 ```
 
@@ -32,63 +32,64 @@ Sinais brutos (.mat)
 ```
 pipeline-tcc/
 │
-├── 0_dados_brutos/                    # Dados de entrada (arquivos .mat)
-│   ├── Data from Sub3/Results/        # 9 arquivos MATLAB — Sujeito 3
-│   └── Data from Sub8/Results/        # Arquivos MATLAB — Sujeito 8
+├── 0_dados_brutos/                        # Dados de entrada (arquivos .mat)
 │
-├── 0_preprocessamento_tcc.ipynb       # Estágio 1: Pré-processamento (v1)
-├── 0_preprocessamento_tcc_v2.ipynb    # Estágio 1: Pré-processamento (v2 — atual)
+├── 0_preprocessamento.ipynb              # Módulo 1 — Pré-processamento
+├── 1_cae_autoencoder.ipynb               # Módulo 2 — Autoencoder Convolucional
+├── 2_k_means_clustering.ipynb            # Módulo 3 — Clusterização K-Means
+├── 3_curadoria_semantica.ipynb           # Módulo 4 — Curadoria Semântica
 │
-├── 1_dados_preprocessados/            # Saídas do pré-processamento (v1)
-├── 1_dados_preprocessados_v2/         # Saídas do pré-processamento (v2)
-│   ├── X_cae_input.npy                # Tensor de entrada do CAE (54 MB)
-│   ├── dataset_X_pu.npy               # Tensões em p.u. (107 MB)
-│   ├── dataset_X_raw_kv.npy           # Tensões brutas em kV (107 MB)
-│   └── dataset_metadata.csv           # Metadados por evento (2.5 MB)
+├── 1_dados_preprocessados/
+│   └── exec_YYYYMMDD_HHMM_SPC_WS_NC_N/  # Uma pasta por execução
+│       ├── X_cae_input.npy               # Tensor de entrada do CAE (N, 384, 3)
+│       ├── dataset_X_pu.npy              # Tensões normalizadas em p.u.
+│       ├── dataset_X_raw_kv.npy          # Tensões brutas em kV
+│       ├── dataset_metadata.csv          # Metadados por evento
+│       └── estatisticas_eventos.csv      # Estatísticas e classe heurística
 │
-├── 1_cae_autoencoder_tcc.ipynb        # Estágio 2: Treinamento do CAE
+├── 2_dados_cae/
+│   └── exec_YYYYMMDD_HHMM_LD_F0_FN_EP/  # Uma pasta por execução
+│       ├── cae_model.keras               # Modelo CAE completo
+│       ├── encoder_model.keras           # Somente o encoder
+│       ├── Z_latente.npy                 # Vetores latentes (N, 16)
+│       ├── historico_treino.json         # Loss/MAE por época
+│       ├── metricas_reconstrucao.csv     # RMSE/MAPE por evento e fase
+│       └── *.png                         # Curvas de treinamento e visualizações
 │
-├── 2_dados_cae/                       # Saídas do CAE (v1)
-├── 2_dados_cae_v2/                    # Saídas do CAE (v2 — atual)
-│   ├── cae_model.keras                # Modelo completo (4.1 MB)
-│   ├── encoder_model.keras            # Somente encoder (574 KB)
-│   ├── Z_latente.npy                  # Vetores latentes 12.092 × 16
-│   ├── historico_treino.json          # Curvas de loss/MAE
-│   └── metricas_reconstrucao.csv      # RMSE por evento
+├── 3_dados_clustering/
+│   └── exec_YYYYMMDD_HHMM_KMIN_KMAX_NINIT/  # Uma pasta por execução
+│       ├── labels_kmeans.npy             # Rótulo de cluster por evento
+│       ├── centroides_clusters.csv       # Centróides no espaço latente
+│       ├── anomalias.csv                 # Eventos anômalos (P90)
+│       ├── metricas_clustering.json      # Silhouette, Davies-Bouldin, CH
+│       ├── Z_pca2d.npy / Z_tsne2d.npy   # Projeções 2D
+│       ├── Z_tsne3d.npy                  # Projeção t-SNE 3D
+│       └── *.png                         # Gráficos de elbow, silhueta, t-SNE
 │
-├── 2_k_means_clustering_tcc.ipynb     # Estágio 3: Clusterização
+├── 4_dados_curadoria/
+│   └── exec_YYYYMMDD_HHMM/               # Uma pasta por execução
+│       ├── eventos_rotulados_hibrido.csv  # Eventos com rótulo IEEE e metadados
+│       ├── anomalias_semanticas.csv       # Anomalias com análise semântica
+│       ├── curadoria_clusters.csv         # Perfil estatístico por cluster
+│       ├── curadoria_metadata.json        # Metadados da execução
+│       ├── relatorio_curadoria_semantica.txt  # Relatório técnico textual
+│       └── *.png                          # Painel visual, heatmap, formas de onda
 │
-├── 3_dados_clustering/                # Saídas da clusterização (v1)
-├── 3_dados_clustering_v2/             # Saídas da clusterização (v2 — atual)
-│   ├── labels_kmeans.npy              # Rótulos de cluster por evento
-│   ├── centroides_clusters.csv        # Centróides dos clusters
-│   ├── anomalias.csv                  # Eventos anômalos (P90)
-│   ├── Z_pca2d.npy                    # Projeção PCA 2D
-│   ├── Z_tsne2d.npy                   # Projeção t-SNE 2D
-│   └── Z_tsne3d.npy                   # Projeção t-SNE 3D
-│
-├── 3_curadoria_semantica_v2.ipynb     # Estágio 4: Curadoria semântica
-│
-├── 4_dados_curadoria/                 # Saídas da curadoria (v1)
-├── 4_dados_curadoria_v2/              # Saídas da curadoria (v2 — atual)
-│   ├── eventos_rotulados_hibrido.csv  # Todos os eventos com rótulos IEEE
-│   ├── anomalias_semanticas.csv       # Anomalias com análise semântica
-│   ├── curadoria_clusters.csv         # Perfil por cluster
-│   ├── curadoria_metadata.json        # Metadados da curadoria
-│   ├── relatorio_curadoria_semantica.txt  # Relatório técnico
-│   └── painel_curadoria.png           # Painel visual de resultados
-│
-├── requirements.txt                   # Dependências Python
-└── Rafael_Neto_PROJETO_TCC_ECAI.docx  # Documento de projeto
+├── requirements.txt                       # Dependências Python
+├── Rafael_Neto_PROJETO_TCC_ECAI.pdf       # Documento de projeto
+└── Rafael_Neto_TCC_FINAL_ECAI.pdf         # TCC final
 ```
+
+> Cada módulo cria automaticamente um subdiretório com timestamp e hiperparâmetros no nome (ex: `exec_20260412_1800_16_32_128_100`), garantindo rastreabilidade completa entre execuções.
 
 ---
 
 ## Estágios do Pipeline
 
-### Estágio 0 — Pré-processamento
+### Módulo 1 — Pré-processamento
 
-**Notebook**: `0_preprocessamento_tcc_v2.ipynb`
+**Notebook**: `0_preprocessamento.ipynb`  
+**Execução de referência**: `1_dados_preprocessados/exec_20260408_1953_60_64_6_384/`
 
 Converte os arquivos MATLAB brutos em tensores normalizados prontos para deep learning.
 
@@ -96,8 +97,7 @@ Converte os arquivos MATLAB brutos em tensores normalizados prontos para deep le
 
 - **Formato**: Arquivos `.mat` com estrutura de detecção (`matAux`)
 - **Conteúdo**: Sinais de tensão trifásicos (fases A, B e C) de eventos elétricos
-- **Sujeitos**: Sub3 e Sub8 (medições de campo de alta tensão)
-- **Total de arquivos processados**: 327 arquivos → **12.092 eventos distintos**
+- **Total de arquivos processados**: 327 arquivos → **11.928 eventos distintos**
 
 #### Parâmetros de Referência
 
@@ -107,32 +107,39 @@ Converte os arquivos MATLAB brutos em tensores normalizados prontos para deep le
 | Amostras por ciclo | 64 | Resolução do sinal |
 | Janela de análise | 6 ciclos (384 amostras) | Norma IEEE 1159:2019 |
 | Tensão nominal de pico | 95,5 kV | Referência p.u. |
-| Faixa válida de tensão | 80–115 kV | Filtro de qualidade |
 
 #### Processamento
 
-1. Leitura dos arquivos `.mat` e extração de formas de onda
+1. Leitura dos arquivos `.mat` e extração de formas de onda trifásicas
 2. Inferência automática da taxa de amostragem (amostras/ciclo)
-3. Cálculo de tensão RMS por ciclo (janela deslizante)
-4. Normalização para valores em por unidade: `V_pu = V_raw / V_nominal`
-5. Extração de janela: 6 ciclos centrados no início do afundamento
-6. Validações de qualidade (faixa de tensão, completude de dados)
-7. Exportação de metadados por evento (V_rms_min, duração, fase afetada etc.)
+3. Normalização para valores em por unidade: `V_pu = V_raw / V_nominal`
+4. Extração de janela centrada: 6 ciclos em torno do início do distúrbio
+5. Classificação heurística preliminar por V_rms
+6. Exportação de metadados por evento (V_rms_min, duração, fase afetada etc.)
 
 #### Dados de Saída
 
 | Arquivo | Forma | Descrição |
 |---|---|---|
-| `dataset_X_pu.npy` | (12092, 384, 3) | Tensões normalizadas em p.u. |
-| `dataset_X_raw_kv.npy` | (12092, 384, 3) | Tensões brutas em kV |
-| `X_cae_input.npy` | (12092, 384, 3) | Tensor formatado para o CAE |
-| `dataset_metadata.csv` | (12092, N) | Metadados tabulares por evento |
+| `X_cae_input.npy` | (11928, 384, 3) | Tensor de entrada para o CAE |
+| `dataset_X_pu.npy` | (11928, 384, 3) | Tensões normalizadas em p.u. |
+| `dataset_X_raw_kv.npy` | (11928, 384, 3) | Tensões brutas em kV |
+| `dataset_metadata.csv` | (11928, 21) | Metadados tabulares por evento |
+| `estatisticas_eventos.csv` | (11928, 8) | Classe heurística e estatísticas |
+
+**Distribuição heurística dos eventos:**
+
+| Classe | Eventos | Proporção |
+|---|---|---|
+| Sag (afundamento) | 11.917 | 99,9% |
+| Interrupção | 11 | 0,1% |
 
 ---
 
-### Estágio 1 — Autoencoder Convolucional (CAE)
+### Módulo 2 — Autoencoder Convolucional (CAE)
 
-**Notebook**: `1_cae_autoencoder_tcc.ipynb`
+**Notebook**: `1_cae_autoencoder.ipynb`  
+**Execução de referência**: `2_dados_cae/exec_20260412_1800_16_32_128_100/`
 
 Aprende uma representação compacta (espaço latente 16D) de cada forma de onda elétrica sem supervisão.
 
@@ -142,17 +149,17 @@ Aprende uma representação compacta (espaço latente 16D) de cada forma de onda
 Entrada: (384, 3) — timesteps × fases
 
 ENCODER
-  ├── Conv1D(64,  kernel=7, padding='same') → ReLU → MaxPool(2)  [→ 192, 64]
-  ├── Conv1D(128, kernel=5, padding='same') → ReLU → MaxPool(2)  [→  96, 128]
-  └── Conv1D(256, kernel=3, padding='same') → ReLU → MaxPool(2)  [→  48, 256]
+  ├── Conv1D(32,  kernel=5, padding='same') → ReLU → MaxPool(2)  [→ 192, 32]
+  ├── Conv1D(64,  kernel=5, padding='same') → ReLU → MaxPool(2)  [→  96, 64]
+  └── Conv1D(128, kernel=3, padding='same') → ReLU → MaxPool(2)  [→  48, 128]
        │
        └── Flatten → Dense(16)  ← ESPAÇO LATENTE (gargalo)
 
 DECODER
-  ├── Dense → Reshape(48, 256)
-  ├── UpSample(2) → Conv1D(256, kernel=3, padding='same') → ReLU  [→  96, 256]
-  ├── UpSample(2) → Conv1D(128, kernel=5, padding='same') → ReLU  [→ 192, 128]
-  └── UpSample(2) → Conv1D(64,  kernel=7, padding='same') → ReLU  [→ 384,  64]
+  ├── Dense → Reshape(48, 128)
+  ├── UpSample(2) → Conv1D(128, kernel=3, padding='same') → ReLU  [→  96, 128]
+  ├── UpSample(2) → Conv1D(64,  kernel=5, padding='same') → ReLU  [→ 192,  64]
+  └── UpSample(2) → Conv1D(32,  kernel=5, padding='same') → ReLU  [→ 384,  32]
        │
        └── Conv1D(3, kernel=1, activation='linear')  → Saída: (384, 3)
 ```
@@ -162,27 +169,26 @@ DECODER
 | Parâmetro | Valor |
 |---|---|
 | Dimensão latente | 16 |
-| Épocas máximas | 100 |
+| Filtros encoder | [32, 64, 128] |
+| Kernels Conv1D | [5, 5, 3] |
+| Épocas | 100 |
 | Batch size | 16 |
-| Otimizador | Adam |
-| Taxa de aprendizado inicial | 1e-3 |
-| Taxa de aprendizado final | 1e-7 |
-| Agendamento de LR | Decaimento exponencial (9 etapas) |
+| Otimizador | Adam (lr inicial = 1e-3) |
 | Divisão validação | 15% |
 | Early stopping (paciência) | 15 épocas |
 | Função de perda | MSE |
 
 #### Resultados do Treinamento
 
-| Métrica | Treinamento | Validação |
-|---|---|---|
-| Loss final (MSE) | 0,000023 | 0,000104 |
-| MAE final | 0,003197 | 0,003161 |
-
-- Convergência em torno das épocas 30–40
-- Excelente generalização: `val_loss ≈ train_loss`
-- RMSE mediano de reconstrução < 0,05 p.u.
-- ~10% dos eventos apresentam erro elevado (candidatos a anomalias)
+| Métrica | Valor |
+|---|---|
+| Loss final — treino (MSE) | 0,000025 |
+| Loss final — validação (MSE) | 0,000093 |
+| Melhor val_loss | 0,000093 |
+| RMSE médio de reconstrução | 0,004189 p.u. |
+| RMSE mediano de reconstrução | 0,003573 p.u. |
+| MAPE médio (todos os canais) | 1,18% |
+| MAPE mediano (todos os canais) | 0,93% |
 
 #### Dados de Saída
 
@@ -190,100 +196,121 @@ DECODER
 |---|---|
 | `cae_model.keras` | Autoencoder completo |
 | `encoder_model.keras` | Somente o encoder (extração de features) |
-| `Z_latente.npy` | Vetores latentes — (12092, 16) |
+| `Z_latente.npy` | Vetores latentes — (11928, 16) |
 | `historico_treino.json` | Loss/MAE por época |
-| `metricas_reconstrucao.csv` | RMSE por evento |
+| `log_treinamento.csv` | Log detalhado por época |
+| `metricas_reconstrucao.csv` | RMSE e MAPE por evento e por fase (Va, Vb, Vc) |
+| `curvas_treinamento.png` | Curvas de loss e MAE |
+| `distribuicao_rmse.png` | Histograma do erro de reconstrução |
+| `latente_pca2d.png` | PCA 2D do espaço latente (diagnóstico) |
 
 ---
 
-### Estágio 2 — Clusterização K-Means
+### Módulo 3 — Clusterização K-Means
 
-**Notebook**: `2_k_means_clustering_tcc.ipynb`
+**Notebook**: `2_k_means_clustering.ipynb`  
+**Execução de referência**: `3_dados_clustering/exec_20260412_1904_2_8_50/`
 
 Particiona os vetores latentes em grupos semânticos e detecta anomalias por distância intra-cluster.
 
 #### Metodologia
 
-1. **Seleção de K**: Método do cotovelo (Elbow) para k = 2 a 8
-2. **Treinamento**: K-Means com `n_init=50` (inicializações robustas) e `max_iter=500`
-3. **Avaliação**: Silhouette Score, Davies-Bouldin Index, Calinski-Harabasz Score
-4. **Detecção de anomalias**: Pontos com distância ao centróide > percentil 90 (P90)
-5. **Visualização**: PCA 2D, t-SNE 2D e t-SNE 3D
+1. **Padronização**: Z-score dos vetores latentes antes do K-Means
+2. **Seleção de K**: Método do cotovelo (Elbow) para k = 2 a 8
+3. **Treinamento**: K-Means++ com `n_init=50` inicializações robustas
+4. **Avaliação**: Silhouette Score, Davies-Bouldin Index, Calinski-Harabasz Score
+5. **Detecção de anomalias**: Eventos com distância ao centróide > percentil 90 (P90)
+6. **Visualização**: PCA 2D, t-SNE 2D e t-SNE 3D
 
 #### Hiperparâmetros
 
 | Parâmetro | Valor |
 |---|---|
-| K ótimo escolhido | 4 (método do cotovelo) |
-| K alternativo (Silhouette) | 7 |
+| K ótimo (Elbow + Silhouette) | 8 |
+| Faixa avaliada | k = 2 a 8 |
 | n_init | 50 |
-| max_iter | 500 |
 | Perplexidade t-SNE | 15 |
-| Iterações t-SNE | 1500 |
+| Iterações t-SNE | 1.500 |
 | Limiar de anomalia | Percentil 90 (distância intra-cluster) |
-| Random state | 42 |
 
 #### Resultados da Clusterização
 
 | Métrica | Valor |
 |---|---|
-| Silhouette Score | 0,48 |
-| Davies-Bouldin Index | 0,88 |
-| Calinski-Harabasz Score | 7.862,70 |
+| K ótimo | 8 |
+| Silhouette Score | 0,4981 |
+| Davies-Bouldin Index | 0,6381 |
+| Calinski-Harabasz Score | 11.333,32 |
 | Total de eventos clusterizados | 11.928 |
-| Anomalias detectadas | 1.194 (≈ 10%) |
+| Anomalias detectadas (P90) | 1.196 (≈ 10,0%) |
 
 **Distribuição por cluster:**
 
 | Cluster | Eventos | Proporção |
 |---|---|---|
-| 0 | 2.190 | 18,4% |
-| 1 | 3.187 | 26,7% |
-| 2 | 2.365 | 19,8% |
-| 3 | 4.186 | 35,1% |
+| 0 | 1.764 | 14,8% |
+| 1 | 2.428 | 20,4% |
+| 2 | 1.102 | 9,2% |
+| 3 | 981 | 8,2% |
+| 4 | 993 | 8,3% |
+| 5 | 1.169 | 9,8% |
+| 6 | 1.693 | 14,2% |
+| 7 | 1.798 | 15,1% |
 
 #### Dados de Saída
 
 | Arquivo | Descrição |
 |---|---|
 | `labels_kmeans.npy` | Rótulo de cluster por evento |
-| `centroides_clusters.csv` | Centróides no espaço latente |
+| `centroides_clusters.csv` | Centróides no espaço latente (16D) |
 | `anomalias.csv` | Eventos flagrados (distância > P90) |
-| `Z_pca2d.npy` | Projeção PCA 2D |
-| `Z_tsne2d.npy` | Projeção t-SNE 2D |
-| `Z_tsne3d.npy` | Projeção t-SNE 3D |
+| `metricas_clustering.json` | Silhouette, Davies-Bouldin, Calinski-Harabasz |
+| `Z_pca2d.npy` / `pca2d_clusters.png` | Projeção PCA 2D |
+| `Z_tsne2d.npy` / `tsne2d_clusters.png` | Projeção t-SNE 2D |
+| `Z_tsne3d.npy` / `tsne3d_clusters.png` | Projeção t-SNE 3D |
+| `elbow_method.png` | Curva do cotovelo |
+| `silhueta_amostras.png` | Coeficiente de silhueta por amostra |
+| `heatmap_centroides.png` | Heatmap dos centróides no espaço latente |
 
 ---
 
-### Estágio 3 — Curadoria Semântica
+### Módulo 4 — Curadoria Semântica
 
-**Notebook**: `3_curadoria_semantica_v2.ipynb`
+**Notebook**: `3_curadoria_semantica.ipynb`  
+**Execução de referência**: `4_dados_curadoria/exec_20260412_1910/`
 
 Mapeia os clusters para categorias da norma **IEEE 1159:2019** com base nas características de tensão RMS e dominância de fase, gerando rótulos informativos e um relatório técnico.
 
-#### Classificação IEEE 1159:2019 (Afundamentos)
+#### Classificação IEEE 1159:2019 (Afundamentos de Tensão)
 
 | Categoria | Faixa V_rms | Descrição |
 |---|---|---|
+| Interrupção | 0,00 – 0,10 p.u. | Tensão praticamente nula |
 | Afundamento Severo | 0,10 – 0,50 p.u. | Distúrbio crítico |
 | Afundamento Moderado | 0,50 – 0,70 p.u. | Distúrbio intermediário |
 | Afundamento Leve | 0,70 – 0,90 p.u. | Distúrbio suave |
+| Tensão Normal | 0,90 – 1,10 p.u. | Operação normal |
+| Swell Leve | 1,10 – 1,40 p.u. | Sobretensão leve |
 
 #### Resultados da Curadoria
 
-Todos os 4 clusters foram classificados como **Afundamento Moderado** (0,50–0,70 p.u.), com diferenciação por fase dominante:
+Todos os 8 clusters foram classificados como **Sag Moderado** (0,50–0,70 p.u.), com diferenciação pela fase elétrica dominante (B ou C). O ΔV_rms entre clusters é de apenas **0,0076 p.u.**, confirmando que os grupos capturam variações sutis dentro da mesma categoria IEEE — subcategorias de severidade e fase afetada.
 
-| Cluster | Eventos | Rótulo | V_rms_min médio | Fase dominante | Duração média |
-|---|---|---|---|---|---|
-| 0 | 3.065 (25,3%) | Sag Moderado — Fase B | 0,564 ± 0,071 p.u. | B | 29,0 ms |
-| 1 | 3.374 (27,9%) | Sag Moderado — Fase A | 0,573 ± 0,013 p.u. | A | 29,4 ms |
-| 2 | 2.729 (22,6%) | Sag Moderado — Fase B | 0,557 ± 0,095 p.u. | B | 28,9 ms |
-| 3 | 2.924 (24,2%) | Sag Moderado — Fase A | 0,563 ± 0,074 p.u. | A | 29,0 ms |
+| Cluster | Eventos | % | Rótulo | V_rms_min médio | V_rms_pré-falta | Fase | Duração |
+|---|---|---|---|---|---|---|---|
+| 0 | 1.928 | 15,9% | Sag Moderado — Fase B | 0,6957 ± 0,0748 p.u. | 0,7008 p.u. | B | 28,8 ms |
+| 1 | 2.428 | 20,1% | Sag Moderado — Fase B | 0,6933 ± 0,0838 p.u. | 0,6994 p.u. | B | 28,9 ms |
+| 2 | 1.102 | 9,1%  | Sag Moderado — Fase B | 0,6924 ± 0,0883 p.u. | 0,6987 p.u. | B | 29,0 ms |
+| 3 | 981  | 8,1%  | Sag Moderado — Fase C | 0,6880 ± 0,1041 p.u. | 0,6960 p.u. | C | 29,3 ms |
+| 4 | 993  | 8,2%  | Sag Moderado — Fase B | 0,6950 ± 0,0767 p.u. | 0,7001 p.u. | B | 29,6 ms |
+| 5 | 1.169 | 9,7% | Sag Moderado — Fase B | 0,6922 ± 0,0890 p.u. | 0,6989 p.u. | B | 28,6 ms |
+| 6 | 1.693 | 14,0% | Sag Moderado — Fase B | 0,6933 ± 0,0849 p.u. | 0,6981 p.u. | B | 29,4 ms |
+| 7 | 1.798 | 14,9% | Sag Moderado — Fase C | 0,6948 ± 0,0787 p.u. | 0,7006 p.u. | C | 29,3 ms |
 
 **Principais observações:**
-- A separação entre clusters se dá pela **fase elétrica afetada** (A vs. B) e por **variações sutis na tensão de pré-falta** (ΔV_rms ≈ 0,016 p.u.)
-- O Cluster 2 apresenta **maior variabilidade** (σ = 0,095 p.u.), indicando diversidade interna
-- ~10% dos eventos foram sinalizados como anomalias semânticas para revisão manual
+- A separação entre clusters ocorre predominantemente pela **fase elétrica afetada** (B vs. C) e por **variações sutis na tensão de pré-falta** (ΔV_rms ≈ 0,0076 p.u.)
+- O Cluster 3 apresenta **maior variabilidade** (σ = 0,1041 p.u.), indicando maior heterogeneidade interna
+- **1.196 eventos** (≈ 9,9%) foram sinalizados como anomalias semânticas para revisão manual
 
 #### Dados de Saída
 
@@ -292,22 +319,26 @@ Todos os 4 clusters foram classificados como **Afundamento Moderado** (0,50–0,
 | `eventos_rotulados_hibrido.csv` | Todos os eventos com rótulo IEEE e metadados |
 | `anomalias_semanticas.csv` | Anomalias com análise semântica detalhada |
 | `curadoria_clusters.csv` | Perfil estatístico por cluster |
-| `curadoria_metadata.json` | Metadados da execução da curadoria |
-| `relatorio_curadoria_semantica.txt` | Relatório técnico textual |
-| `painel_curadoria.png` | Painel visual consolidado |
+| `curadoria_metadata.json` | Metadados da execução (k, Silhouette, ΔV_rms etc.) |
+| `relatorio_curadoria_semantica.txt` | Relatório técnico textual completo |
+| `painel_curadoria.png` | Painel visual consolidado (4 visualizações) |
+| `formas_onda_representativas.png` | Formas de onda do evento central por cluster |
+| `heatmap_perfil_clusters.png` | Heatmap de perfil por cluster |
 
 ---
 
 ## Tecnologias Utilizadas
 
-| Biblioteca | Versão | Uso |
-|---|---|---|
-| TensorFlow / Keras | ≥ 2.x | Autoencoder convolucional (CAE) |
-| scikit-learn | ≥ 1.x | K-Means, PCA, t-SNE, métricas |
-| NumPy | — | Manipulação de arrays e tensores |
-| Pandas | — | Metadados e exportação CSV |
-| Matplotlib | — | Visualizações e painéis |
-| SciPy | — | Processamento de sinais (RMS, FFT) |
+| Biblioteca | Uso |
+|---|---|
+| TensorFlow / Keras | Autoencoder convolucional (CAE) |
+| scikit-learn | K-Means, PCA, t-SNE, métricas de clustering |
+| NumPy | Manipulação de arrays e tensores |
+| Pandas | Metadados e exportação CSV |
+| Matplotlib | Visualizações e painéis |
+| SciPy | Processamento de sinais (RMS, FFT) |
+| pathlib | Gerenciamento dinâmico de caminhos |
+| ipywidgets | Seleção interativa de execuções nos notebooks |
 
 ---
 
@@ -327,25 +358,27 @@ pip install -r requirements.txt
 
 ### Execução Sequencial dos Notebooks
 
-Execute os notebooks na ordem numérica indicada pelos prefixos:
+Execute os notebooks na ordem indicada pelos prefixos:
 
 ```
-1. 0_preprocessamento_tcc_v2.ipynb   → gera dados em 1_dados_preprocessados_v2/
-2. 1_cae_autoencoder_tcc.ipynb        → gera modelos e vetores em 2_dados_cae_v2/
-3. 2_k_means_clustering_tcc.ipynb     → gera clusters em 3_dados_clustering_v2/
-4. 3_curadoria_semantica_v2.ipynb     → gera rótulos em 4_dados_curadoria_v2/
+1. 0_preprocessamento.ipynb       → gera pasta em 1_dados_preprocessados/exec_.../
+2. 1_cae_autoencoder.ipynb        → gera pasta em 2_dados_cae/exec_.../
+3. 2_k_means_clustering.ipynb     → gera pasta em 3_dados_clustering/exec_.../
+4. 3_curadoria_semantica.ipynb    → gera pasta em 4_dados_curadoria/exec_.../
 ```
 
-### Requisitos de Armazenamento
+Em cada notebook, a **Célula 3** exibe um seletor interativo (`ipywidgets.Dropdown`) para escolher a pasta de entrada gerada pelo módulo anterior. O diretório de saída é criado automaticamente com timestamp e hiperparâmetros no nome.
 
-| Componente | Tamanho |
+### Rastreabilidade entre Execuções
+
+Os diretórios de saída seguem o padrão:
+
+| Módulo | Padrão do diretório |
 |---|---|
-| Dados pré-processados (tensores) | ~268 MB |
-| Modelos CAE + Encoder | ~4,7 MB |
-| Vetores latentes | ~756 KB |
-| Saídas de clustering | ~3,8 MB |
-| Saídas de curadoria | ~5,8 MB |
-| **Total estimado** | **~1,5 GB** |
+| Pré-processamento | `exec_{YYYYMMDD_HHMM}_{SPC}_{WS}_{NC}_{N}` |
+| CAE | `exec_{YYYYMMDD_HHMM}_{LATENT_DIM}_{F_min}_{F_max}_{EPOCHS}` |
+| K-Means | `exec_{YYYYMMDD_HHMM}_{K_MIN}_{K_MAX}_{N_INIT}` |
+| Curadoria | `exec_{YYYYMMDD_HHMM}` |
 
 ---
 
@@ -353,13 +386,21 @@ Execute os notebooks na ordem numérica indicada pelos prefixos:
 
 | Estágio | Indicador | Resultado |
 |---|---|---|
-| Pré-processamento | Eventos válidos processados | 12.092 |
-| CAE — Treinamento | MAE de reconstrução (validação) | 0,003161 |
-| CAE — Treinamento | MSE de reconstrução (validação) | 0,000104 |
-| Clusterização | Silhouette Score | 0,48 |
-| Clusterização | Anomalias detectadas | 1.194 (≈ 10%) |
-| Curadoria | Clusters com rótulo IEEE 1159 | 4 / 4 |
+| Pré-processamento | Arquivos .mat processados | 327 |
+| Pré-processamento | Eventos extraídos | 11.928 |
+| Pré-processamento | Classe predominante (heurística) | Sag (99,9%) |
+| CAE | Loss treino final (MSE) | 0,000025 |
+| CAE | Loss validação final (MSE) | 0,000093 |
+| CAE | RMSE mediano de reconstrução | 0,003573 p.u. |
+| CAE | MAPE mediano (todos os canais) | 0,93% |
+| K-Means | K ótimo | 8 |
+| K-Means | Silhouette Score | 0,4981 |
+| K-Means | Davies-Bouldin Index | 0,6381 |
+| K-Means | Calinski-Harabasz Score | 11.333,32 |
+| K-Means | Anomalias detectadas (P90) | 1.196 (≈ 10,0%) |
+| Curadoria | Clusters rotulados (IEEE 1159) | 8 / 8 |
 | Curadoria | Categoria predominante | Sag Moderado (0,50–0,70 p.u.) |
+| Curadoria | ΔV_rms entre clusters | 0,0076 p.u. |
 
 ---
 
@@ -367,10 +408,11 @@ Execute os notebooks na ordem numérica indicada pelos prefixos:
 
 - **Aprendizado não supervisionado**: nenhum rótulo manual foi utilizado em nenhuma etapa do pipeline, tornando a abordagem aplicável a novos conjuntos de dados sem anotação prévia.
 - **Gargalo latente de 16 dimensões**: dimensão escolhida empiricamente para balancear capacidade de representação e separabilidade dos clusters.
+- **K=8 vs. K=4**: o aumento para 8 clusters (Silhouette=0,498; DBI=0,638; CH=11.333) superou o desempenho de K=4, capturando subcategorias de fase afetada (B vs. C) dentro da mesma classe IEEE.
 - **Curadoria híbrida**: combinação de K-Means (agrupamento estrutural) com regras IEEE 1159 (interpretação de domínio), evitando tanto a caixa-preta pura quanto a dependência exclusiva de heurísticas manuais.
 - **Inicialização robusta do K-Means**: `n_init=50` para reduzir sensibilidade à inicialização aleatória de centróides.
 - **Anomalias por percentil**: limiar adaptativo (P90 por cluster) em vez de limiar fixo global, respeitando a heterogeneidade entre grupos.
-- **Decaimento exponencial de LR**: 9 etapas de redução da taxa de aprendizado para convergência estável sem mínimos locais grosseiros.
+- **Rastreabilidade por timestamp**: cada execução gera um subdiretório próprio com hiperparâmetros no nome, eliminando sobrescrita acidental de resultados.
 - **Reprodutibilidade**: `random_state=42` em todas as etapas estocásticas.
 
 ---
