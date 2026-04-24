@@ -7,7 +7,7 @@ Programa ECAI 4.0 — Universidade Federal de Roraima (UFRR)
 
 ## Visão Geral
 
-Este projeto implementa um **pipeline completo de análise automática de distúrbios elétricos** em sistemas de medição inteligente (smart metering), com foco em afundamentos de tensão (*voltage sags*) classificados segundo a norma **IEEE 1159:2019**.
+Este projeto implementa um **pipeline completo de análise automática de distúrbios elétricos** em sistemas de medição inteligente (smart metering), classificados segundo a norma **IEEE 1159:2019**.
 
 O pipeline é totalmente não supervisionado: a partir de sinais brutos trifásicos em formato MATLAB, extrai representações latentes via **Autoencoder Convolucional (CAE)**, agrupa eventos via **K-Means** e rotula os agrupamentos semanticamente de acordo com faixas de tensão normalizadas. O resultado é um conjunto de eventos elétricos categorizados e prontos para auditoria técnica.
 
